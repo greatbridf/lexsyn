@@ -1,3 +1,5 @@
+TOKEN_TYPE_LIST = []
+
 class TokenType:
     _next_id = 0
 
@@ -20,6 +22,8 @@ class TokenType:
         return self in TT_KEYWORD
 
 def _make_token_type(name: str) -> TokenType:
+    TOKEN_TYPE_LIST.append(name)
+
     id = TokenType._next_id
     TokenType._next_id += 1
     return TokenType(id, name)
