@@ -164,7 +164,8 @@ class Lexer:
                 continue
             
             raise ValueError(f"Unknown `{self.current_char}` at position {self.pos}")
-
+        
+        self.tokens.append(Token(tt.TT_END, '$'))
         return self.tokens
 
 

@@ -1,6 +1,7 @@
 import sys
 from lexer import * 
 from parser import *
+from astprint import *
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -16,4 +17,5 @@ if __name__ == "__main__":
     RustGrammar.compute_first_set()
     parser = LR1Parser()
     ast = LR1Parser().parse(tokens) 
-    # ast.to_png()
+    image_path = ast_to_png(ast)
+    print(f'AST visualization saved to: {image_path}')

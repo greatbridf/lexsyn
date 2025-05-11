@@ -2,8 +2,7 @@ from collections import defaultdict
 from lexer import Token
 import graphviz
 
-
-# Must have "Empty"
+# Must have "Empty" "Program"
 NonTerminalTable = [
     "Program",                      #Program
     "Empty",                        #空 
@@ -36,8 +35,6 @@ NonTerminalTable = [
     "AssignableItem",               #可赋值元素
     "LoopSentence",                 #循环语句
     "WhileSentence",                #while语句
-
-    # "Program","S","C","Empty"
 ]
 
 TerminalTable = [
@@ -62,9 +59,7 @@ TerminalTable = [
     '(',')','{','}','[',']',
     '->','.','..',
     '$',
-    # "c","d","$"
 ]
-
 
 def SymbolfromStr(symbol: str):
     if symbol in NonTerminalTable:
@@ -142,19 +137,19 @@ class Grammar:
         while changed:
             changed = False
             for p in self.productions:
-                A = p.left # NonTerminalSymbol
+                A = p.left
 
-                # Rule: For a production A -> Y1 Y2 ... Yk
+                # For a production A -> Y1 Y2 ... Yk
                 # Add First(Y1) to First(A).
-                # If Y1 is nullable, add First(Y2) to First(A).
+                # If Y1 is emptyable, add First(Y2) to First(A).
                 # Continue this for Y3, ..., Yk if Y1, ..., Yi-1 are all emptyable.
                 for idx, Y in enumerate(p.right):
                     if isinstance(Y, TerminalSymbol):
                         if Y not in self.first_set[A]:
                             self.first_set[A].add(Y)
                             changed = True
-                        break # No need to check further symbols in this production
-                    else: # Y is a NonTerminalSymbol
+                        break
+                    else:
                         if Y == SymbolfromStr("Empty"):
                             if len(p.right) == idx + 1 and A not in self.emptyable_set:
                                 self.emptyable_set.add(A) 
@@ -165,9 +160,8 @@ class Grammar:
                                     self.first_set[A].add(terminal_in_first_Y)
                                     changed = True
                         
-                            # If Y is not nullable, then subsequent symbols don't contribute to First(A)
                             if not Y in self.emptyable_set:
-                                break # No need to check further symbols in this production
+                                break
 
 # Make sure start symbol(Program) is in 0 and only one
 RustGrammar = Grammar([
@@ -212,7 +206,7 @@ RustGrammar = Grammar([
     ["Expression","AddExpression"],
     ["AddExpression","Item"],
     ["Item","Factor"],
-    ["Factor","Factor"],
+    ["Factor","Element"],
     ["Element",'NUM'],
     ["Element","AssignableItem"],
     ["Element",'(',"Expression",')'],
@@ -256,11 +250,6 @@ RustGrammar = Grammar([
 
     # 0.3
     ["AssignableItem",'ID'],
-
-    # ["Program","S"],
-    # ["S","C","C"],
-    # ["C",'c',"C"],
-    # ["C",'d']
 ])
 
 class LR1Item:
@@ -301,9 +290,17 @@ class LR1Item:
     def is_reducible(self):
         return self.dot_pos == len(RustGrammar.productions[self.production_idx])
 
+
+    def is_special_empty(self):
+        production = RustGrammar.productions[self.production_idx]
+        if self.dot_pos == len(production) - 1:
+            if production.right[self.dot_pos] == SymbolfromStr("Empty"):
+                return True
+        return False
+
 class LR1Action:
-    def __init__(self, action_type: int, value: int):
-        self.action_type = action_type  # 0 for shift, 1 for reduce
+    def __init__(self, action_type: int, value):
+        self.action_type = action_type  # 0 for shift, 1 for reduce, 2 for special empty
         self.value = value  # lr1 state number or production index
     
     def __repr__(self):
@@ -311,6 +308,8 @@ class LR1Action:
             return f"S{self.value}"
         elif self.action_type == 1:
             return f"R{self.value}"
+        elif self.action_type == 2:
+            return f"E"
         else:
             return f"UnknownAction(type={self.action_type}, value={self.value})"
 
@@ -319,6 +318,9 @@ class LR1Action:
 
     def is_reduce(self):
         return self.action_type == 1
+    
+    def is_special_empty(self):
+        return self.action_type == 2
 
 class LR1Table:
     def __init__(self, action_table: dict, goto_table: dict):
@@ -328,7 +330,6 @@ class LR1Table:
     def __repr__(self):
         return f"LR1Table(\n    {self.action_table}\n   {self.goto_table}\n)"
         
-
 class LR1State:
     def __init__(self, items: set[LR1Item]):
         self.items = items
@@ -348,6 +349,13 @@ class LR1State:
         items = set()
         for item in self.items:
             if item.is_reducible():
+                items.add((item.production_idx, frozenset(item.lookahead_symbols))) 
+        return items
+    
+    def get_special_empty(self):
+        items = set()
+        for item in self.items:
+            if item.is_special_empty():
                 items.add((item.production_idx, frozenset(item.lookahead_symbols))) 
         return items
 
@@ -434,6 +442,11 @@ class LR1TableBuilder:
                 # print(lookahead_symbols)
                 for symbol in lookahead_symbols:
                     action_table[current_state_id][symbol] = LR1Action(1, production_idx)
+            
+            items = current_state.get_special_empty()
+            for production_idx, lookahead_symbols in items:
+                for symbol in lookahead_symbols:
+                    action_table[current_state_id][symbol] = LR1Action(2, None)
 
             for symbol in RustGrammar.terminal_symbols:
                 symbol = SymbolfromStr(symbol)
@@ -462,6 +475,7 @@ class LR1TableBuilder:
                     if next_state not in states_set:
                         states_set[next_state] = len(states_set)
                         states_stack.append(next_state)
+
                     if current_state_id in goto_table and symbol in goto_table[current_state_id]:
                         raise Exception("Build error") 
                     else:
@@ -482,21 +496,6 @@ class AST:
     def __init__(self, root: ASTNode):
        self.root = root
     
-    def to_png(self):
-        def add_nodes_edges(node: ASTNode):
-            if node:
-                dot.node(str(id(node)), str(node.value))
-                if node.left:
-                    dot.edge(str(id(node)), str(id(node.left)))
-                    add_nodes_edges(node.left)
-                if node.right:
-                    dot.edge(str(id(node)), str(id(node.right)))
-                    add_nodes_edges(node.right)
-        
-        dot = graphviz.Digraph(comment='二叉树可视化')
-        add_nodes_edges(self.root) 
-        dot.render('tree', format='png', cleanup=True)
-
 def SymbolfromToken(token: Token):
     return SymbolfromStr(token.type().name) 
 
@@ -516,9 +515,13 @@ class LR1Parser:
             state = state_stack[-1]
             token = tokens[idx]
 
-            print(symbol_stack)
-            print(idx)
-            print(token)
+            # print("") 
+            # print(state)
+            # for symbol in symbol_stack:
+            #     print(symbol)
+            # print(idx)
+            # print(token)
+            # print("")
 
             action = self.lr1_table.action_table[state][SymbolfromToken(token)]
 
@@ -539,9 +542,20 @@ class LR1Parser:
                 state = state_stack[-1]
                 if production.left == SymbolfromStr("Program"):  # parse End
                     return AST(ASTNode(production.left, childs))
-                
+
                 next_state = self.lr1_table.goto_table[state][production.left]
                 symbol_stack.append(ASTNode(production.left, childs))
                 state_stack.append(next_state)
+            elif action.is_special_empty():
+                next_state = self.lr1_table.goto_table[state][SymbolfromStr("Empty")]
+                symbol_stack.append(ASTNode(SymbolfromStr("Empty"), None))
+                state_stack.append(next_state)
             else:
                 raise Exception("Parse error")
+
+if __name__ == "__main__":
+    RustGrammar.compute_first_set()
+    # print(RustGrammar.emptyable_set)
+    # print(RustGrammar.first_set)
+    table = LR1TableBuilder().build()
+    

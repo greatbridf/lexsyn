@@ -1,5 +1,5 @@
 fn print(number: i32) {
-    // let _ = number;
+    let _ = number;
 }
 
 fn main() {
@@ -7,13 +7,13 @@ fn main() {
     let mut b: i32 = 20;
 
     if a > 0 {
-        print(b)
+        print(b);
     } else {
-        print(a)
+        print(a);
     }
 
     while b == 0 {
-        print(a)
+        print(a);
     }
 
     return a;
