@@ -64,8 +64,8 @@ TT_KEYWORD = {
     TT_IN, TT_LOOP, TT_BREAK, TT_CONTINUE
 }
 
-TT_NUMBER = _make_token_type('number')
-TT_IDENTIFIER = _make_token_type('identifier')
+TT_NUMBER = _make_token_type('NUM')
+TT_IDENTIFIER = _make_token_type('ID')
 
 TT_EQUAL = _make_token_type('=')
 

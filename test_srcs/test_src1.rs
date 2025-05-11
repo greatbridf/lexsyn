@@ -3,26 +3,17 @@ fn print(number: i32) {
 }
 
 fn main() {
-    let a: i32=10;
+    let a = 10 * 20 - 9;
     let mut b: i32 = 20;
 
-    loop {
-        b= b   -1;
-        if b==0 {
-            break;
-        }
+    if a > 0 {
+        print(b)
+    } else {
+        print(a)
     }
 
-    while 0 == 0 {
-        ;
-    }
-
-    for item in range(0, 10) {
-        if item > 7 {
-            continue;
-        } else {
-            print(item / 3);
-        }
+    while b == 0 {
+        print(a)
     }
 
     return a;

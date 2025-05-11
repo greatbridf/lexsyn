@@ -1,4 +1,7 @@
 from collections import defaultdict
+from lexer import Token
+import graphviz
+
 
 # Must have "Empty"
 NonTerminalTable = [
@@ -477,27 +480,42 @@ class ASTNode:
 class AST:
     def __init__(self, root: ASTNode):
        self.root = root
+    
+    def to_png(self):
+        def add_nodes_edges(node: ASTNode):
+            if node:
+                dot.node(str(id(node)), str(node.value))
+                if node.left:
+                    dot.edge(str(id(node)), str(id(node.left)))
+                    add_nodes_edges(node.left)
+                if node.right:
+                    dot.edge(str(id(node)), str(id(node.right)))
+                    add_nodes_edges(node.right)
+        
+        dot = graphviz.Digraph(comment='二叉树可视化')
+        add_nodes_edges(self.root) 
+        dot.render('tree', format='png', cleanup=True)
 
-class Token:
-    def __init__(self, type: str, value: str):
-        self._type = type
-        self._value = value
+# class Token:
+#     def __init__(self, type: str, value: str):
+#         self._type = type
+#         self._value = value
     
-    def __repr__(self) -> str:
-        return f'Token({repr(self._type)}, `{self._value}`)'
+#     def __repr__(self) -> str:
+#         return f'Token({repr(self._type)}, `{self._value}`)'
     
-    def __str__(self) -> str:
-        return f'Token({self._type}, `{self._value}`)'
+#     def __str__(self) -> str:
+#         return f'Token({self._type}, `{self._value}`)'
     
-    def value(self) -> str:
-        return self._value
+#     def value(self) -> str:
+#         return self._value
     
-    def type(self) -> str:
-        return self._type
+#     def type(self) -> str:
+#         return self._type
 
 
 def SymbolfromToken(token: Token):
-    return SymbolfromStr(token.type()) 
+    return SymbolfromStr(str(token.type())) 
 
 class LR1Parser:
     def __init__(self):
@@ -544,12 +562,3 @@ class LR1Parser:
                 state_stack.append(next_state)
             else:
                 raise Exception("Parse error")
-
-if __name__ == "__main__":
-    RustGrammar.compute_first_set()
-    
-    print("compute first finish")
-    table = LR1TableBuilder().build() 
-    # print(table)
-
-    LR1Parser().parse([Token('c', "c"), Token('d', "d"), Token('d', "d"), Token('$', "$")]) 
