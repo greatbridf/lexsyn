@@ -1,5 +1,5 @@
 fn print(number: i32) {
-    let _ = number;
+    // let _ = number;
 }
 
 fn main() {

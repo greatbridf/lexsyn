@@ -249,6 +249,7 @@ RustGrammar = Grammar([
 
     # 0.1
     ["VarDeclareInner",'mut','ID'],
+    ["VarDeclareInner",'ID'],
 
     # 0.2
     ["Type",'i32'],
@@ -496,26 +497,8 @@ class AST:
         add_nodes_edges(self.root) 
         dot.render('tree', format='png', cleanup=True)
 
-# class Token:
-#     def __init__(self, type: str, value: str):
-#         self._type = type
-#         self._value = value
-    
-#     def __repr__(self) -> str:
-#         return f'Token({repr(self._type)}, `{self._value}`)'
-    
-#     def __str__(self) -> str:
-#         return f'Token({self._type}, `{self._value}`)'
-    
-#     def value(self) -> str:
-#         return self._value
-    
-#     def type(self) -> str:
-#         return self._type
-
-
 def SymbolfromToken(token: Token):
-    return SymbolfromStr(str(token.type())) 
+    return SymbolfromStr(token.type().name) 
 
 class LR1Parser:
     def __init__(self):

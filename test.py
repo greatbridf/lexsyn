@@ -12,6 +12,8 @@ if __name__ == "__main__":
     with open(source_file, 'r') as f:
         text = f.read()
 
-    tokens = run_lexer() 
+    tokens = run_lexer(text) 
+    RustGrammar.compute_first_set()
+    parser = LR1Parser()
     ast = LR1Parser().parse(tokens) 
     # ast.to_png()
