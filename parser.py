@@ -1,7 +1,5 @@
 from collections import defaultdict
 from lexer import Token
-import graphviz
-
 
 # Must have "Empty"
 NonTerminalTable = [
@@ -470,8 +468,8 @@ class LR1TableBuilder:
         return LR1Table(action_table, goto_table)
 
 class ASTNode:
-    def __init__(self, symbol, children, val = None):
-        self.children = children
+    def __init__(self, symbol: TerminalSymbol | NonTerminalSymbol, children: list[any] | None, val: Token | None = None):
+        self.children: list[ASTNode] | None = children
         self.symbol = symbol
         self.val = val
     
@@ -481,21 +479,6 @@ class ASTNode:
 class AST:
     def __init__(self, root: ASTNode):
        self.root = root
-    
-    def to_png(self):
-        def add_nodes_edges(node: ASTNode):
-            if node:
-                dot.node(str(id(node)), str(node.value))
-                if node.left:
-                    dot.edge(str(id(node)), str(id(node.left)))
-                    add_nodes_edges(node.left)
-                if node.right:
-                    dot.edge(str(id(node)), str(id(node.right)))
-                    add_nodes_edges(node.right)
-        
-        dot = graphviz.Digraph(comment='二叉树可视化')
-        add_nodes_edges(self.root) 
-        dot.render('tree', format='png', cleanup=True)
 
 def SymbolfromToken(token: Token):
     return SymbolfromStr(token.type().name) 
